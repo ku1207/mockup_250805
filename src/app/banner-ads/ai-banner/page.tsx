@@ -182,7 +182,7 @@ export default function AIBanner() {
     <div className="w-4/5 mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">AI 배너 광고</h1>
-        <p className="text-gray-600">AI 기술을 활용하여 자동으로 최적화된 배너 광고를 생성하고 관리하세요.</p>
+        <p className="text-gray-600">AI로 자동으로 최적화된 배너 광고를 생성하고 관리하세요.</p>
       </div>
 
       {/* AI 소재 분석 영역 */}
@@ -381,6 +381,7 @@ export default function AIBanner() {
                   </div>
                 ) : (
                   <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={URL.createObjectURL(uploadedImage)}
                       alt="업로드된 이미지"

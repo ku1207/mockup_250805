@@ -34,7 +34,7 @@ export interface MediaResultData {
   designAnalysis: string;
 }
 
-export const mediaResultsData: MediaResultData[] = [
+export const mediaResultsData: MediaResultData[] = ([
   {
     category: '통신',
     subCategory: '인터넷/IPTV',
@@ -3465,4 +3465,4 @@ export const mediaResultsData: MediaResultData[] = [
     eyeFlow: 'F',
     designAnalysis: '강렬한 옐로우 컬러와 명확한 타이포, 제품 실사와 일러스트 조합으로 시각적 주목성과 정보 전달력이 뛰어납니다.'
   }
-];
+] as MediaResultData[]).filter(Boolean);

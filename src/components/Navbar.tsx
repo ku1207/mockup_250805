@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDownIcon, UserIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline';
 
 export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
