@@ -6,22 +6,28 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze-data": "ts-node --esm --transpile-only scripts/analyze-and-update-data.ts",
+    "test-gpt": "node scripts/test-single-analysis.js"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "next": "15.4.5",
+    "openai": "^5.11.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.4.5"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20.19.9",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
+    "dotenv": "^17.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
-    "@eslint/eslintrc": "^3"
+    "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
   }
 }
