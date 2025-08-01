@@ -89,8 +89,8 @@ function extractTop4Materials(
  */
 function createImageGenerationPrompt(params: GPTImageGenerationRequest): string {
   // abTestCopyExamples에서 optionA 값만 추출
-  const subCopy = typeof params.abTestCopyExamples === 'object' && params.abTestCopyExamples.optionA 
-    ? params.abTestCopyExamples.optionA 
+  const subCopy = typeof params.abTestCopyExamples === 'object' && params.abTestCopyExamples !== null && 'optionA' in params.abTestCopyExamples
+    ? (params.abTestCopyExamples as any).optionA 
     : params.abTestCopyExamples;
 
   // recommendedCtaCopyExamples를 쉼표로 분할하여 첫 번째 요소 사용
