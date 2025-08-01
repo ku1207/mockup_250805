@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { MaterialAnalysisData } from '@/services/aiMaterialAnalysis';
 import { BannerCopyResponse } from '@/services/bannerCopyGeneration';
-import { GPTImageGenerationRequest, GPTImageGenerationResult } from '@/services/gptImageServiceA';
+import { GPTImageGenerationRequest } from '@/services/gptImageServiceA';
 
 export default function AIBanner() {
   const [selectedMainCategory, setSelectedMainCategory] = useState('');

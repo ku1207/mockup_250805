@@ -180,12 +180,12 @@ export async function generateBannerImageWithGPT(
           model: 'gpt-image-1',
           image: validImages,
           prompt: prompt,
-          size: params.size as any
+          size: params.size as "1024x1024" | "1792x1024" | "1024x1792"
         })
       : await openaiImageClient.images.generate({
           model: 'gpt-image-1',
           prompt: prompt,
-          size: params.size as any
+          size: params.size as "1024x1024" | "1792x1024" | "1024x1792"
         });
 
     console.log('OpenAI 이미지 생성 API 응답 완료:', {
@@ -248,10 +248,11 @@ export async function generateBannerImageWithGPT(
 /**
  * Base64 이미지를 파일로 저장하는 유틸리티 함수
  */
+import fs from 'fs';
+import path from 'path';
+
 export function saveBase64Image(base64Data: string, filename: string): string {
   try {
-    const fs = require('fs');
-    const path = require('path');
     
     // Base64 데이터를 바이너리로 변환
     const imageBuffer = Buffer.from(base64Data, 'base64');
