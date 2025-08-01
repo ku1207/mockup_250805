@@ -248,9 +248,6 @@ export async function generateBannerImageWithGPT(
 /**
  * Base64 이미지를 파일로 저장하는 유틸리티 함수
  */
-import fs from 'fs';
-import path from 'path';
-
 export function saveBase64Image(base64Data: string, filename: string): string {
   try {
     
