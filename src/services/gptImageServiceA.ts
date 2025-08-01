@@ -89,9 +89,13 @@ function extractTop4Materials(
  */
 function createImageGenerationPrompt(params: GPTImageGenerationRequest): string {
   // abTestCopyExamples에서 optionA 값만 추출
-  const subCopy = typeof params.abTestCopyExamples === 'object' && params.abTestCopyExamples !== null && 'optionA' in params.abTestCopyExamples
-    ? (params.abTestCopyExamples as any).optionA 
-    : params.abTestCopyExamples;
+  let subCopy: string;
+  if (typeof params.abTestCopyExamples === 'object' && params.abTestCopyExamples !== null && 'optionA' in params.abTestCopyExamples) {
+    const obj = params.abTestCopyExamples as Record<string, string>;
+    subCopy = obj.optionA || String(params.abTestCopyExamples);
+  } else {
+    subCopy = String(params.abTestCopyExamples);
+  }
 
   // recommendedCtaCopyExamples를 쉼표로 분할하여 첫 번째 요소 사용
   const ctaElements = params.recommendedCtaCopyExamples.split(',').map(item => item.trim());
