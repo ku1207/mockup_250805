@@ -229,7 +229,9 @@ export default function AIBanner() {
         abTestCopyExamples: selectedCopyData.abTestCopyExamples?.optionA || '',
         recommendedColorTone: selectedCopyData.recommendedColorTone?.join(', ') || '',
         recommendedCtaCopyExamples: selectedCopyData.recommendedCtaCopyExamples?.join(', ') || '',
-        size: selectedImageSize
+        size: selectedImageSize,
+        selectedMainCategory: selectedMainCategory,
+        selectedSubCategory: selectedSubCategory
       };
 
       // 두 번째 이미지를 위한 요청 데이터 (optionB 사용)

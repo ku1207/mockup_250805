@@ -1,4 +1,8 @@
-import OpenAI from 'openai';
+import fs from 'fs';
+import path from 'path';
+import OpenAI, { toFile } from 'openai';
+import { MediaResultData } from '@/data/mediaResultsData';
+import { mediaResultsData } from '@/data/mediaResultsData';
 
 // GPT 이미지 생성 요청 인터페이스
 export interface GPTImageGenerationRequest {
@@ -11,6 +15,8 @@ export interface GPTImageGenerationRequest {
   recommendedColorTone: string;
   recommendedCtaCopyExamples: string;
   size: string;
+  selectedMainCategory?: string;
+  selectedSubCategory?: string;
 }
 
 // GPT 이미지 생성 결과 인터페이스
@@ -31,6 +37,54 @@ const openaiImageClient = new OpenAI({
 console.log('OpenAI 이미지 클라이언트 초기화 완료');
 
 /**
+ * 상위 4개 소재 추출 함수 (extractTop20PercentMaterials와 유사)
+ */
+function extractTop4Materials(
+  materials: MediaResultData[],
+  selectedMainCategory: string,
+  selectedSubCategory: string
+): MediaResultData[] {
+  // 카테고리 필터링
+  let filteredMaterials = materials;
+  
+  if (selectedMainCategory) {
+    filteredMaterials = filteredMaterials.filter(item => item.category === selectedMainCategory);
+  }
+  
+  if (selectedSubCategory) {
+    filteredMaterials = filteredMaterials.filter(item => item.subCategory === selectedSubCategory);
+  }
+
+  if (filteredMaterials.length === 0) {
+    return [];
+  }
+
+  // CTR, CVR, ROAS 기준으로 상위 소재들 추출
+  const topCTRMaterials = [...filteredMaterials]
+    .sort((a, b) => b.ctr - a.ctr)
+    .slice(0, 2); // 상위 2개
+    
+  const topCVRMaterials = [...filteredMaterials]
+    .sort((a, b) => b.cvr - a.cvr)
+    .slice(0, 1); // 상위 1개
+    
+  const topROASMaterials = [...filteredMaterials]
+    .sort((a, b) => b.roas - a.roas)
+    .slice(0, 1); // 상위 1개
+
+  // 중복 제거를 위해 Set 사용
+  const uniqueMaterialIds = new Set([
+    ...topCTRMaterials.map(item => item.creativeId),
+    ...topCVRMaterials.map(item => item.creativeId),
+    ...topROASMaterials.map(item => item.creativeId)
+  ]);
+
+  // 고유한 소재들만 반환하되 최대 4개로 제한
+  const topMaterials = filteredMaterials.filter(item => uniqueMaterialIds.has(item.creativeId));
+  return topMaterials.slice(0, 4);
+}
+
+/**
  * 프롬프트 템플릿 - 변수 치환을 위한 함수
  */
 function createImageGenerationPrompt(params: GPTImageGenerationRequest): string {
@@ -38,6 +92,10 @@ function createImageGenerationPrompt(params: GPTImageGenerationRequest): string 
   const subCopy = typeof params.abTestCopyExamples === 'object' && params.abTestCopyExamples.optionA 
     ? params.abTestCopyExamples.optionA 
     : params.abTestCopyExamples;
+
+  // recommendedCtaCopyExamples를 쉼표로 분할하여 첫 번째 요소 사용
+  const ctaElements = params.recommendedCtaCopyExamples.split(',').map(item => item.trim());
+  const ctaCopy = ctaElements.length >= 1 ? ctaElements[0] : params.recommendedCtaCopyExamples;
 
   return `###지시사항
 성과가 우수한 배너광고 정보를 분석하십시오. 그리고 '제작 요청 배너광고'에서 요청한 정보를 기반으로 이미지를 생성하십시오.
@@ -53,7 +111,7 @@ ${params.designAnalyze}
 배너 카피 : ${params.bannerSampleCopy}
 배너 서브 카피 : ${subCopy}
 배너 색상 : ${params.recommendedColorTone}
-CTA 문구 : ${params.recommendedCtaCopyExamples}`;
+CTA 문구 : ${ctaCopy}`;
 }
 
 /**
@@ -67,20 +125,68 @@ export async function generateBannerImageWithGPT(
     console.log('요청 파라미터:', {
       copyType: params.copyType,
       size: params.size,
-      bannerSampleCopy: params.bannerSampleCopy?.substring(0, 50) + '...'
+      bannerSampleCopy: params.bannerSampleCopy?.substring(0, 50) + '...',
+      selectedMainCategory: params.selectedMainCategory,
+      selectedSubCategory: params.selectedSubCategory
     });
+
+    // 상위 4개 소재 추출
+    const topMaterials = extractTop4Materials(
+      mediaResultsData, 
+      params.selectedMainCategory || '', 
+      params.selectedSubCategory || ''
+    );
+    
+    console.log('추출된 상위 소재 수:', topMaterials.length);
 
     // 프롬프트 생성
     const prompt = createImageGenerationPrompt(params);
     console.log('생성된 프롬프트 길이:', prompt.length);
 
-    // OpenAI 이미지 생성 API 호출
+    // 상위 소재 이미지 파일들을 toFile 형태로 변환
+    const imageFiles: string[] = topMaterials.map(material => material.creativeContent);
+    console.log('참조 이미지 파일들:', imageFiles);
+
+    const images = await Promise.all(
+      imageFiles.map(async (filePath) => {
+        try {
+          // 경로 앞의 슬래시 제거
+          const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+          const absolutePath = path.join(process.cwd(), 'public', cleanPath);
+          
+          if (!fs.existsSync(absolutePath)) {
+            console.warn(`이미지 파일 없음: ${absolutePath}`);
+            return null;
+          }
+          
+          return await toFile(fs.createReadStream(absolutePath), path.basename(absolutePath), {
+            type: 'image/png',
+          });
+        } catch (error) {
+          console.error(`이미지 파일 로드 실패: ${filePath}`, error);
+          return null;
+        }
+      })
+    );
+
+    // null 값 제거
+    const validImages = images.filter(img => img !== null);
+    console.log('유효한 참조 이미지 수:', validImages.length);
+
+    // OpenAI 이미지 편집 API 호출 (참조 이미지가 있는 경우)
     console.log('OpenAI 이미지 생성 API 호출 시작...');
-    const response = await openaiImageClient.images.generate({
-      model: 'gpt-image-1',
-      prompt: prompt,
-      size: params.size as any // 사이즈는 OpenAI API 규격에 맞게 전달
-    });
+    const response = validImages.length > 0 
+      ? await openaiImageClient.images.edit({
+          model: 'gpt-image-1',
+          image: validImages,
+          prompt: prompt,
+          size: params.size as any
+        })
+      : await openaiImageClient.images.generate({
+          model: 'gpt-image-1',
+          prompt: prompt,
+          size: params.size as any
+        });
 
     console.log('OpenAI 이미지 생성 API 응답 완료:', {
       dataLength: response.data?.length,
