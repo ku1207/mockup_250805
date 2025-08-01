@@ -21,6 +21,14 @@ export default function MediaResults() {
   const endIndex = startIndex + rowsPerPage;
   const currentData = data.slice(startIndex, endIndex);
 
+  // 계산된 총합 값들
+  const totalImpressions = data.reduce((sum, item) => sum + item.impressions, 0);
+  const totalClicks = data.reduce((sum, item) => sum + item.clicks, 0);
+  const totalCtr = totalImpressions > 0 ? (totalClicks / totalImpressions * 100) : 0;
+  const totalAdCost = data.reduce((sum, item) => sum + item.adCost, 0);
+  const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
+  const totalRoas = totalAdCost > 0 ? (totalRevenue / totalAdCost * 100) : 0;
+
   // 페이지 변경 핸들러
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -474,27 +482,27 @@ export default function MediaResults() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="text-sm font-medium text-gray-500 mb-2">총 노출수</h3>
-          <p className="text-2xl font-bold text-gray-900">-</p>
+          <p className="text-2xl font-bold text-gray-900">{totalImpressions.toLocaleString()}</p>
           <p className="text-sm text-green-600">+0%</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="text-sm font-medium text-gray-500 mb-2">총 클릭수</h3>
-          <p className="text-2xl font-bold text-gray-900">-</p>
+          <p className="text-2xl font-bold text-gray-900">{totalClicks.toLocaleString()}</p>
           <p className="text-sm text-green-600">+0%</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="text-sm font-medium text-gray-500 mb-2">클릭률</h3>
-          <p className="text-2xl font-bold text-gray-900">-%</p>
+          <p className="text-2xl font-bold text-gray-900">{totalCtr.toFixed(1)}%</p>
           <p className="text-sm text-gray-500">+0%</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="text-sm font-medium text-gray-500 mb-2">총 비용</h3>
-          <p className="text-2xl font-bold text-gray-900">-원</p>
+          <p className="text-2xl font-bold text-gray-900">{totalAdCost.toLocaleString()}원</p>
           <p className="text-sm text-red-600">+0%</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md border">
           <h3 className="text-sm font-medium text-gray-500 mb-2">ROAS</h3>
-          <p className="text-2xl font-bold text-gray-900">-%</p>
+          <p className="text-2xl font-bold text-gray-900">{totalRoas.toFixed(1)}%</p>
           <p className="text-sm text-gray-500">+0%</p>
         </div>
       </div>

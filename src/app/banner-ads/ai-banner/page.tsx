@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MaterialAnalysisData } from '@/services/aiMaterialAnalysis';
 import { BannerCopyResponse } from '@/services/bannerCopyGeneration';
+import { GPTImageGenerationRequest, GPTImageGenerationResult } from '@/services/gptImageServiceA';
 
 export default function AIBanner() {
   const [selectedMainCategory, setSelectedMainCategory] = useState('');
@@ -21,6 +22,11 @@ export default function AIBanner() {
   // AI 카피 생성 관련 상태
   const [bannerCopyResult, setBannerCopyResult] = useState<BannerCopyResponse | null>(null);
   const [isCopyGenerating, setIsCopyGenerating] = useState(false);
+
+  // AI 이미지 생성 관련 상태
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedImageB, setGeneratedImageB] = useState<string | null>(null);
+  const [isImageGenerating, setIsImageGenerating] = useState(false);
 
   // 카테고리 데이터 (세부검색 기능과 동일)
   const categoryData = {
@@ -176,6 +182,120 @@ export default function AIBanner() {
       'comparisonContrast': '비교·대조형'
     };
     return typeMap[copyType] || copyType;
+  };
+
+  // AI 이미지 제안 생성 함수
+  const handleGenerateAIImage = async () => {
+    console.log('=== AI 이미지 제안 생성 시작 ===');
+    
+    // 필수 값 검증
+    if (!selectedCopyType) {
+      alert('카피 유형을 선택해주세요.');
+      return;
+    }
+    
+    if (!selectedImageSize) {
+      alert('사이즈를 선택해주세요.');
+      return;
+    }
+    
+    if (!aiAnalysisResult || !bannerCopyResult) {
+      alert('먼저 AI 소재 분석과 카피 제안을 완료해주세요.');
+      return;
+    }
+
+    // 선택된 카피 유형에 해당하는 데이터 찾기
+    const selectedCopyData = bannerCopyResult.bannerCopyTable.find(item => 
+      getCopyTypeDisplayName(item.copyType) === selectedCopyType
+    );
+    
+    if (!selectedCopyData) {
+      alert('선택한 카피 유형의 데이터를 찾을 수 없습니다.');
+      return;
+    }
+
+    setIsImageGenerating(true);
+    setGeneratedImage(null);
+    setGeneratedImageB(null);
+
+    try {
+      // GPT 이미지 생성 요청 데이터 구성
+      const requestData: GPTImageGenerationRequest = {
+        messageTypeAnalyze: aiAnalysisResult.aiAnalysis.messageTypeAnalyze.join('\n'),
+        ctaAnalyze: aiAnalysisResult.aiAnalysis.ctaAnalyze.join('\n'),
+        designAnalyze: aiAnalysisResult.aiAnalysis.designAnalyze.join('\n'),
+        copyType: selectedCopyType,
+        bannerSampleCopy: selectedCopyData.bannerSampleCopy || '',
+        abTestCopyExamples: selectedCopyData.abTestCopyExamples?.optionA || '',
+        recommendedColorTone: selectedCopyData.recommendedColorTone?.join(', ') || '',
+        recommendedCtaCopyExamples: selectedCopyData.recommendedCtaCopyExamples?.join(', ') || '',
+        size: selectedImageSize
+      };
+
+      // 두 번째 이미지를 위한 요청 데이터 (optionB 사용)
+      const requestDataB: GPTImageGenerationRequest = {
+        ...requestData,
+        abTestCopyExamples: selectedCopyData.abTestCopyExamples?.optionB || ''
+      };
+
+      console.log('이미지 생성 요청 데이터:', requestData);
+      console.log('이미지B 생성 요청 데이터:', requestDataB);
+
+      // 두 이미지를 동시에 생성
+      const [responseA, responseB] = await Promise.all([
+        fetch('/api/generate-ai-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        }),
+        fetch('/api/generate-ai-image-b', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestDataB),
+        })
+      ]);
+      
+      console.log('API A 응답 상태:', responseA.status, responseA.statusText);
+      console.log('API B 응답 상태:', responseB.status, responseB.statusText);
+
+      if (!responseA.ok) {
+        throw new Error('AI 이미지 A 생성 요청이 실패했습니다.');
+      }
+
+      const resultA = await responseA.json();
+      console.log('API A 응답 데이터:', resultA);
+      
+      if (resultA.success) {
+        console.log('이미지 A 생성 성공');
+        setGeneratedImage(`data:image/png;base64,${resultA.imageBase64}`);
+      } else {
+        throw new Error(resultA.error || 'AI 이미지 A 생성에 실패했습니다.');
+      }
+
+      if (responseB.ok) {
+        const resultB = await responseB.json();
+        console.log('API B 응답 데이터:', resultB);
+        
+        if (resultB.success) {
+          console.log('이미지 B 생성 성공');
+          setGeneratedImageB(`data:image/png;base64,${resultB.imageBase64}`);
+        } else {
+          console.warn('이미지 B 생성 실패:', resultB.error);
+        }
+      } else {
+        console.warn('이미지 B API 요청 실패:', responseB.status, responseB.statusText);
+      }
+    } catch (error) {
+      console.error('AI 이미지 생성 오류:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      alert(`AI 이미지 생성 중 오류가 발생했습니다:\n${errorMessage}`);
+    } finally {
+      setIsImageGenerating(false);
+    }
   };
 
   return (
@@ -551,12 +671,121 @@ export default function AIBanner() {
           </select>
         </div>
         <div>
-          <button className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200 font-medium whitespace-nowrap">
-            AI 이미지 제안 생성
+          <button 
+            onClick={handleGenerateAIImage}
+            disabled={isImageGenerating}
+            className={`px-6 py-2 rounded-md transition-all duration-200 font-medium whitespace-nowrap ${
+              isImageGenerating
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                : 'bg-white border border-gray-300 text-gray-700 hover:bg-green-50 hover:border-green-300 hover:text-green-700'
+            }`}
+          >
+            {isImageGenerating ? 'AI 이미지 생성 중...' : 'AI 이미지 제안 생성'}
           </button>
         </div>
       </div>
 
+      {/* AI 이미지 생성 결과 영역 */}
+      <div className="bg-white p-6 rounded-lg shadow-md border mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI 이미지 제안</h3>
+        
+        {/* 이미지 생성 중 로딩 표시 */}
+        {isImageGenerating && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-md">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+              <span className="text-blue-800 text-sm">AI가 배너 이미지를 생성하고 있습니다...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* 좌우 분할 영역 */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* 왼쪽 영역 - 이미지 출력 */}
+          <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
+            {generatedImage ? (
+              <div className="text-center">
+                <img 
+                  src={generatedImage} 
+                  alt="생성된 AI 배너 이미지" 
+                  className="max-w-full h-auto rounded-lg shadow-md mx-auto"
+                />
+                <div className="mt-2 text-sm text-gray-600">
+                  생성된 배너 이미지 ({selectedImageSize})
+                </div>
+                <div className="mt-4 space-y-2">
+                  <button 
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = generatedImage;
+                      link.download = `ai-banner-${Date.now()}.png`;
+                      link.click();
+                    }}
+                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                  >
+                    이미지 다운로드
+                  </button>
+                  <button 
+                    onClick={() => setGeneratedImage(null)}
+                    className="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                  >
+                    이미지 제거
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-gray-500">생성된 이미지가 여기에 표시됩니다</p>
+              </div>
+            )}
+          </div>
+          
+          {/* 오른쪽 영역 - 이미지 B 출력 영역 */}
+          <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-300">
+            {generatedImageB ? (
+              <div className="text-center">
+                <img 
+                  src={generatedImageB} 
+                  alt="생성된 AI 배너 이미지 B" 
+                  className="max-w-full h-auto rounded-lg shadow-md mx-auto"
+                />
+                <div className="mt-2 text-sm text-gray-600">
+                  생성된 배너 이미지 B ({selectedImageSize})
+                </div>
+                <div className="mt-4 space-y-2">
+                  <button 
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = generatedImageB;
+                      link.download = `ai-banner-b-${Date.now()}.png`;
+                      link.click();
+                    }}
+                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                  >
+                    이미지 다운로드
+                  </button>
+                  <button 
+                    onClick={() => setGeneratedImageB(null)}
+                    className="w-full px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                  >
+                    이미지 제거
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-gray-500">생성된 이미지가 여기에 표시됩니다</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
     </div>
   );

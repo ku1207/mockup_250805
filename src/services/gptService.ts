@@ -21,15 +21,7 @@ export interface GPTAnalysisResult {
   designAnalysis: string;
 }
 
-// OpenAI 클라이언트 초기화
-console.log('OpenAI 클라이언트 초기화 중...');
-console.log('API 키 존재:', !!process.env.OPENAI_API_KEY);
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-console.log('OpenAI 클라이언트 초기화 완료');
+// OpenAI 클라이언트를 함수 내에서 초기화하도록 변경
 
 // 이미지 분석 프롬프트 템플릿
 const ANALYSIS_PROMPT = `###지시사항
@@ -149,6 +141,20 @@ function getImageMimeType(imagePath: string): string {
 export async function analyzeImageWithGPT(imagePath: string): Promise<GPTAnalysisResult> {
   try {
     console.log(`=== GPT 이미지 분석 시작: ${imagePath} ===`);
+    
+    // OpenAI 클라이언트를 함수 호출 시점에 초기화
+    console.log('OpenAI 클라이언트 초기화 중...');
+    console.log('API 키 존재:', !!process.env.OPENAI_API_KEY);
+
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY 환경변수가 설정되지 않았습니다. .env.local 파일을 확인하고 서버를 재시작하세요.');
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    console.log('OpenAI 클라이언트 초기화 완료');
     
     // 경로 앞의 슬래시 제거
     const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
