@@ -5,12 +5,35 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== AI 이미지 B 생성 API 호출 시작 ===');
     
-    // 요청 본문 파싱
-    const requestData: GPTImageGenerationRequest = await request.json();
+    // 요청 본문 파싱 (FormData 또는 JSON 지원)
+    let requestData: GPTImageGenerationRequest;
+    const contentType = request.headers.get('content-type');
+    
+    if (contentType?.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      requestData = {
+        messageTypeAnalyze: formData.get('messageTypeAnalyze') as string,
+        ctaAnalyze: formData.get('ctaAnalyze') as string,
+        designAnalyze: formData.get('designAnalyze') as string,
+        copyType: formData.get('copyType') as string,
+        bannerSampleCopy: formData.get('bannerSampleCopy') as string,
+        abTestCopyExamples: formData.get('abTestCopyExamples') as string,
+        recommendedColorTone: formData.get('recommendedColorTone') as string,
+        recommendedCtaCopyExamples: formData.get('recommendedCtaCopyExamples') as string,
+        size: formData.get('size') as string,
+        selectedMainCategory: formData.get('selectedMainCategory') as string,
+        selectedSubCategory: formData.get('selectedSubCategory') as string,
+        userUploadedImage: formData.get('userUploadedImage') as File | null || undefined
+      };
+    } else {
+      requestData = await request.json();
+    }
+    
     console.log('요청 데이터:', {
       copyType: requestData.copyType,
       size: requestData.size,
-      hasAnalysisData: !!(requestData.messageTypeAnalyze && requestData.ctaAnalyze && requestData.designAnalyze)
+      hasAnalysisData: !!(requestData.messageTypeAnalyze && requestData.ctaAnalyze && requestData.designAnalyze),
+      hasUserImage: !!requestData.userUploadedImage
     });
 
     // 필수 필드 검증

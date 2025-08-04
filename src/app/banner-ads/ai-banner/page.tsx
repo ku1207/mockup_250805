@@ -231,33 +231,54 @@ export default function AIBanner() {
         recommendedCtaCopyExamples: selectedCopyData.recommendedCtaCopyExamples?.join(', ') || '',
         size: selectedImageSize,
         selectedMainCategory: selectedMainCategory,
-        selectedSubCategory: selectedSubCategory
+        selectedSubCategory: selectedSubCategory,
+        userUploadedImage: uploadedImage
       };
 
       // 두 번째 이미지를 위한 요청 데이터 (optionB 사용)
       const requestDataB: GPTImageGenerationRequest = {
         ...requestData,
-        abTestCopyExamples: selectedCopyData.abTestCopyExamples?.optionB || ''
+        abTestCopyExamples: selectedCopyData.abTestCopyExamples?.optionB || '',
+        userUploadedImage: uploadedImage
       };
 
       console.log('이미지 생성 요청 데이터:', requestData);
-      console.log('이미지B 생성 요청 데이터:', requestDataB);
+      console.log('이미지 생성 요청 데이터:', requestDataB);
+
+      // FormData 생성 함수
+      const createFormData = (data: GPTImageGenerationRequest) => {
+        if (data.userUploadedImage) {
+          const formData = new FormData();
+          Object.entries(data).forEach(([key, value]) => {
+            if (key === 'userUploadedImage' && value instanceof File) {
+              formData.append(key, value);
+            } else if (value !== undefined && value !== null) {
+              formData.append(key, String(value));
+            }
+          });
+          return { body: formData, headers: {} };
+        } else {
+          return {
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' }
+          };
+        }
+      };
+
+      const requestConfigA = createFormData(requestData);
+      const requestConfigB = createFormData(requestDataB);
 
       // 두 이미지를 동시에 생성
       const [responseA, responseB] = await Promise.all([
         fetch('/api/generate-ai-image', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
+          headers: requestConfigA.headers,
+          body: requestConfigA.body,
         }),
         fetch('/api/generate-ai-image-b', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestDataB),
+          headers: requestConfigB.headers,
+          body: requestConfigB.body,
         })
       ]);
       
@@ -490,6 +511,7 @@ export default function AIBanner() {
                       onChange={handleImageUpload}
                       className="hidden"
                       id="image-upload"
+                      multiple={false}
                     />
                     <label
                       htmlFor="image-upload"

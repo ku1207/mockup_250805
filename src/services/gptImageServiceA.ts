@@ -17,6 +17,7 @@ export interface GPTImageGenerationRequest {
   size: string;
   selectedMainCategory?: string;
   selectedSubCategory?: string;
+  userUploadedImage?: File;
 }
 
 // GPT 이미지 생성 결과 인터페이스
@@ -37,12 +38,13 @@ const openaiImageClient = new OpenAI({
 console.log('OpenAI 이미지 클라이언트 초기화 완료');
 
 /**
- * 상위 4개 소재 추출 함수 (extractTop20PercentMaterials와 유사)
+ * 상위 소재 추출 함수 (사용자 업로드 이미지 유무에 따라 3개 또는 4개)
  */
-function extractTop4Materials(
+function extractTopMaterials(
   materials: MediaResultData[],
   selectedMainCategory: string,
-  selectedSubCategory: string
+  selectedSubCategory: string,
+  hasUserUploadedImage: boolean = false
 ): MediaResultData[] {
   // 카테고리 필터링
   let filteredMaterials = materials;
@@ -59,18 +61,21 @@ function extractTop4Materials(
     return [];
   }
 
+  // 사용자 업로드 이미지 유무에 따라 추출할 소재 수 결정
+  const maxMaterials = hasUserUploadedImage ? 3 : 4;
+  
   // CTR, CVR, ROAS 기준으로 상위 소재들 추출
   const topCTRMaterials = [...filteredMaterials]
     .sort((a, b) => b.ctr - a.ctr)
-    .slice(0, 2); // 상위 2개
+    .slice(0, hasUserUploadedImage ? 2 : 2); // 상위 2개
     
   const topCVRMaterials = [...filteredMaterials]
     .sort((a, b) => b.cvr - a.cvr)
-    .slice(0, 1); // 상위 1개
+    .slice(0, hasUserUploadedImage ? 1 : 1); // 상위 1개
     
   const topROASMaterials = [...filteredMaterials]
     .sort((a, b) => b.roas - a.roas)
-    .slice(0, 1); // 상위 1개
+    .slice(0, hasUserUploadedImage ? 0 : 1); // 사용자 이미지가 있으면 0개, 없으면 1개
 
   // 중복 제거를 위해 Set 사용
   const uniqueMaterialIds = new Set([
@@ -79,9 +84,9 @@ function extractTop4Materials(
     ...topROASMaterials.map(item => item.creativeId)
   ]);
 
-  // 고유한 소재들만 반환하되 최대 4개로 제한
+  // 고유한 소재들만 반환하되 최대 개수로 제한
   const topMaterials = filteredMaterials.filter(item => uniqueMaterialIds.has(item.creativeId));
-  return topMaterials.slice(0, 4);
+  return topMaterials.slice(0, maxMaterials);
 }
 
 /**
@@ -101,9 +106,18 @@ function createImageGenerationPrompt(params: GPTImageGenerationRequest): string 
   const ctaElements = params.recommendedCtaCopyExamples.split(',').map(item => item.trim());
   const ctaCopy = ctaElements.length >= 1 ? ctaElements[0] : params.recommendedCtaCopyExamples;
 
+  // 사용자 업로드 이미지 텍스트 처리
+  const userImageText = params.userUploadedImage 
+    ? `사용자가 업로드한 이미지(${params.userUploadedImage.name})가 첫 번째 참조 이미지로 제공됩니다. 이 이미지를 반드시 활용하여 배너를 생성하십시오.`
+    : '사용자 업로드 이미지가 없습니다.';
+
   return `###지시사항
 성과가 우수한 배너광고 정보를 분석하십시오. 그리고 '제작 요청 배너광고'에서 요청한 정보를 기반으로 이미지를 생성하십시오.
 실제 운영되는 배너광고 이미지를 참고하여 이미지를 생성하십시오.
+만약 사용자가 업로드한 이미지가 있다면 반드시 사용자 업로드 이미지를 사용하여 배너를 생성하십시오.
+
+###사용자 업로드 이미지
+${userImageText}
 
 ###성과가 우수한 배너광고 정보
 ${params.messageTypeAnalyze}
@@ -134,11 +148,13 @@ export async function generateBannerImageWithGPT(
       selectedSubCategory: params.selectedSubCategory
     });
 
-    // 상위 4개 소재 추출
-    const topMaterials = extractTop4Materials(
+    // 사용자 업로드 이미지 유무에 따라 상위 소재 추출 (3개 또는 4개)
+    const hasUserImage = !!params.userUploadedImage;
+    const topMaterials = extractTopMaterials(
       mediaResultsData, 
       params.selectedMainCategory || '', 
-      params.selectedSubCategory || ''
+      params.selectedSubCategory || '',
+      hasUserImage
     );
     
     console.log('추출된 상위 소재 수:', topMaterials.length);
@@ -147,31 +163,46 @@ export async function generateBannerImageWithGPT(
     const prompt = createImageGenerationPrompt(params);
     console.log('생성된 프롬프트 길이:', prompt.length);
 
+    // 참조 이미지 배열 준비
+    const imagePromises: Promise<any>[] = [];
+    
+    // 사용자 업로드 이미지가 있으면 첫 번째로 추가
+    if (params.userUploadedImage) {
+      console.log('사용자 업로드 이미지 추가:', params.userUploadedImage.name);
+      imagePromises.push(
+        Promise.resolve(await toFile(params.userUploadedImage, params.userUploadedImage.name, {
+          type: params.userUploadedImage.type,
+        }))
+      );
+    }
+    
     // 상위 소재 이미지 파일들을 toFile 형태로 변환
     const imageFiles: string[] = topMaterials.map(material => material.creativeContent);
     console.log('참조 이미지 파일들:', imageFiles);
-
-    const images = await Promise.all(
-      imageFiles.map(async (filePath) => {
-        try {
-          // 경로 앞의 슬래시 제거
-          const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-          const absolutePath = path.join(process.cwd(), 'public', cleanPath);
-          
-          if (!fs.existsSync(absolutePath)) {
-            console.warn(`이미지 파일 없음: ${absolutePath}`);
-            return null;
-          }
-          
-          return await toFile(fs.createReadStream(absolutePath), path.basename(absolutePath), {
-            type: 'image/png',
-          });
-        } catch (error) {
-          console.error(`이미지 파일 로드 실패: ${filePath}`, error);
+    
+    // 상위 소재 이미지들 추가
+    const materialImagePromises = imageFiles.map(async (filePath) => {
+      try {
+        // 경로 앞의 슬래시 제거
+        const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+        const absolutePath = path.join(process.cwd(), 'public', cleanPath);
+        
+        if (!fs.existsSync(absolutePath)) {
+          console.warn(`이미지 파일 없음: ${absolutePath}`);
           return null;
         }
-      })
-    );
+        
+        return await toFile(fs.createReadStream(absolutePath), path.basename(absolutePath), {
+          type: 'image/png',
+        });
+      } catch (error) {
+        console.error(`이미지 파일 로드 실패: ${filePath}`, error);
+        return null;
+      }
+    });
+    
+    imagePromises.push(...materialImagePromises);
+    const images = await Promise.all(imagePromises);
 
     // null 값 제거
     const validImages = images.filter(img => img !== null);
