@@ -164,7 +164,7 @@ export async function generateBannerImageWithGPT(
     console.log('생성된 프롬프트 길이:', prompt.length);
 
     // 참조 이미지 배열 준비
-    const imagePromises: Promise<any>[] = [];
+    const imagePromises: Promise<File | null>[] = [];
     
     // 사용자 업로드 이미지가 있으면 첫 번째로 추가
     if (params.userUploadedImage) {
