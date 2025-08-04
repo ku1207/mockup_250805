@@ -17,7 +17,7 @@ export interface GPTImageGenerationRequest {
   size: string;
   selectedMainCategory?: string;
   selectedSubCategory?: string;
-  userUploadedImage?: File;
+  userUploadedImage?: File | null;
 }
 
 // GPT 이미지 생성 결과 인터페이스
