@@ -256,11 +256,11 @@ export default function AIBanner() {
               formData.append(key, String(value));
             }
           });
-          return { body: formData, headers: {} };
+          return { body: formData, headers: {} as Record<string, string> };
         } else {
           return {
             body: JSON.stringify(data),
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' } as Record<string, string>
           };
         }
       };
