@@ -1,6 +1,11 @@
+'use client';
+
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 export default function BannerAds() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">배너광고</h1>
         <p className="text-gray-600">다양한 형태의 배너 광고를 관리하세요.</p>
@@ -120,6 +125,7 @@ export default function BannerAds() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

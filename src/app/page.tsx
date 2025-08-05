@@ -1,8 +1,12 @@
+'use client';
+
 import Link from "next/link";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function Home() {
   return (
-    <div className="container mx-auto px-4 py-12">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-12">
       {/* 헤로 섹션 */}
       <div className="text-center mb-16">
         <h1 className="text-5xl font-bold text-gray-900 mb-6">
@@ -97,6 +101,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

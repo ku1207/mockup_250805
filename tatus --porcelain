@@ -1,0 +1,15 @@
+warning: in the working copy of 'src/app/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+src/app/api/generate-ai-image-b/route.ts
+src/app/api/generate-ai-image/route.ts
+src/app/banner-ads/ai-banner/page.tsx
+src/app/banner-ads/media-results/page.tsx
+src/app/banner-ads/page.tsx
+src/app/dashboard/page.tsx
+src/app/layout.tsx
+src/app/page.tsx
+src/app/search-ads/page.tsx
+src/app/shopping-ads/page.tsx
+src/app/video-ads/page.tsx
+src/components/Navbar.tsx
+src/services/gptImageServiceA.ts

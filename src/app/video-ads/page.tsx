@@ -1,6 +1,11 @@
+'use client';
+
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 export default function VideoAds() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">영상광고</h1>
         <p className="text-gray-600">동영상 기반 광고 캠페인을 관리하고 성과를 분석하세요.</p>
@@ -176,6 +181,7 @@ export default function VideoAds() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

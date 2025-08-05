@@ -1,6 +1,11 @@
+'use client';
+
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 export default function SearchAds() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">검색광고</h1>
         <p className="text-gray-600">검색 키워드 기반 광고를 관리하세요.</p>
@@ -94,6 +99,7 @@ export default function SearchAds() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

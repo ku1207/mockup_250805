@@ -1,6 +1,11 @@
+'use client';
+
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 export default function ShoppingAds() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">쇼핑광고</h1>
         <p className="text-gray-600">상품 기반 쇼핑 광고를 관리하세요.</p>
@@ -108,6 +113,7 @@ export default function ShoppingAds() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

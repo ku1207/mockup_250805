@@ -2,13 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronDownIcon, UserIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  const { isAuthenticated, username, logout, isLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -95,39 +99,51 @@ export default function Navbar() {
 
           {/* 유저 접속정보 - 완전 우측 정렬 */}
           <div className="flex items-center flex-shrink-0" ref={userDropdownRef}>
-            <div className="relative">
-              <button
-                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
+            {isLoading ? (
+              <div className="w-20 h-8 bg-gray-200 rounded animate-pulse"></div>
+            ) : isAuthenticated ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
+                >
+                  <UserIcon className="h-5 w-5 mr-2" />
+                  {username}
+                  <ChevronDownIcon className={`ml-1 h-4 w-4 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isUserDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                      onClick={() => {
+                        // 계정 정보 로직
+                        setIsUserDropdownOpen(false);
+                      }}
+                    >
+                      계정 정보
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                      onClick={() => {
+                        logout();
+                        router.push('/login');
+                        setIsUserDropdownOpen(false);
+                      }}
+                    >
+                      로그아웃
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
               >
-                <UserIcon className="h-5 w-5 mr-2" />
-                계정
-                <ChevronDownIcon className={`ml-1 h-4 w-4 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isUserDropdownOpen && (
-                <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                    onClick={() => {
-                      // 계정 정보 로직
-                      setIsUserDropdownOpen(false);
-                    }}
-                  >
-                    계정 정보
-                  </button>
-                  <button
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                    onClick={() => {
-                      // 로그아웃 로직
-                      setIsUserDropdownOpen(false);
-                    }}
-                  >
-                    로그아웃
-                  </button>
-                </div>
-              )}
-            </div>
+                로그인
+              </Link>
+            )}
           </div>
         </div>
       </div>

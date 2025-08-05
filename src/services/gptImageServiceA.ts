@@ -25,6 +25,11 @@ export interface GPTImageGenerationResult {
   imageBase64: string;
   success: boolean;
   error?: string;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 // OpenAI 클라이언트 초기화 (새로운 API 키 사용)
@@ -228,6 +233,15 @@ export async function generateBannerImageWithGPT(
       hasB64Json: !!response.data?.[0]?.b64_json
     });
 
+    // 토큰 사용량 로깅
+    if (response.usage) {
+      console.log('=== GPT 토큰 사용량 ===');
+      console.log('Prompt tokens:', response.usage.prompt_tokens);
+      console.log('Completion tokens:', response.usage.completion_tokens);
+      console.log('Total tokens:', response.usage.total_tokens);
+      console.log('====================');
+    }
+
     // 응답 검증 및 base64 추출
     if (!response.data || !response.data[0]) {
       console.error('이미지 생성 실패: 응답 데이터 없음', response);
@@ -245,7 +259,12 @@ export async function generateBannerImageWithGPT(
 
     return {
       imageBase64,
-      success: true
+      success: true,
+      usage: response.usage ? {
+        prompt_tokens: response.usage.prompt_tokens,
+        completion_tokens: response.usage.completion_tokens,
+        total_tokens: response.usage.total_tokens
+      } : undefined
     };
 
   } catch (error) {

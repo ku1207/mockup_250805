@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { mediaResultsData, MediaResultData } from '@/data/mediaResultsData';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function MediaResults() {
   const [isAdvancedSearchOpen, setIsAdvancedSearchOpen] = useState(false);
@@ -206,7 +207,8 @@ export default function MediaResults() {
 
 
   return (
-    <div className="w-4/5 mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="w-4/5 mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">매체 결과 데이터</h1>
         <p className="text-gray-600">각 광고 매체별 성과 분석 및 상세 리포트를 확인하세요.</p>
@@ -771,6 +773,7 @@ export default function MediaResults() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

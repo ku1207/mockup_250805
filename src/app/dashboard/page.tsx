@@ -1,6 +1,11 @@
+'use client';
+
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 export default function Dashboard() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">대시보드</h1>
         <p className="text-gray-600">전체 광고 현황을 한눈에 확인하세요.</p>
@@ -58,6 +63,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

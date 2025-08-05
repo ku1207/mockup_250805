@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MaterialAnalysisData } from '@/services/aiMaterialAnalysis';
 import { BannerCopyResponse } from '@/services/bannerCopyGeneration';
 import { GPTImageGenerationRequest } from '@/services/gptImageServiceA';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function AIBanner() {
   const [selectedMainCategory, setSelectedMainCategory] = useState('');
@@ -285,12 +286,23 @@ export default function AIBanner() {
       console.log('API A 응답 상태:', responseA.status, responseA.statusText);
       console.log('API B 응답 상태:', responseB.status, responseB.statusText);
 
+
       if (!responseA.ok) {
         throw new Error('AI 이미지 A 생성 요청이 실패했습니다.');
       }
 
       const resultA = await responseA.json();
-      console.log('API A 응답 데이터:', resultA);
+      const { imageBase64, ...resultAWithoutImage } = resultA;
+      console.log('API A 응답 데이터 (imageBase64 제외):', resultAWithoutImage);
+      
+      // 토큰 사용량 로깅
+      if (resultA.usage) {
+        console.log('=== GPT 토큰 사용량 (이미지 A) ===');
+        console.log('Prompt tokens:', resultA.usage.prompt_tokens);
+        console.log('Completion tokens:', resultA.usage.completion_tokens);
+        console.log('Total tokens:', resultA.usage.total_tokens);
+        console.log('==============================');
+      }
       
       if (resultA.success) {
         console.log('이미지 A 생성 성공');
@@ -301,7 +313,17 @@ export default function AIBanner() {
 
       if (responseB.ok) {
         const resultB = await responseB.json();
-        console.log('API B 응답 데이터:', resultB);
+        const { imageBase64: imageBase64B, ...resultBWithoutImage } = resultB;
+        console.log('API B 응답 데이터 (imageBase64 제외):', resultBWithoutImage);
+        
+        // 토큰 사용량 로깅
+        if (resultB.usage) {
+          console.log('=== GPT 토큰 사용량 (이미지 B) ===');
+          console.log('Prompt tokens:', resultB.usage.prompt_tokens);
+          console.log('Completion tokens:', resultB.usage.completion_tokens);
+          console.log('Total tokens:', resultB.usage.total_tokens);
+          console.log('==============================');
+        }
         
         if (resultB.success) {
           console.log('이미지 B 생성 성공');
@@ -322,7 +344,8 @@ export default function AIBanner() {
   };
 
   return (
-    <div className="w-4/5 mx-auto px-4 py-8">
+    <ProtectedRoute>
+      <div className="w-4/5 mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">AI 배너 광고</h1>
         <p className="text-gray-600">AI로 자동으로 최적화된 배너 광고를 생성하고 관리하세요.</p>
@@ -811,6 +834,7 @@ export default function AIBanner() {
         </div>
       </div>
 
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }
