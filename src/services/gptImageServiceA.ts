@@ -233,14 +233,6 @@ export async function generateBannerImageWithGPT(
       hasB64Json: !!response.data?.[0]?.b64_json
     });
 
-    // 토큰 사용량 로깅
-    if (response.usage) {
-      console.log('=== GPT 토큰 사용량 ===');
-      console.log('Prompt tokens:', response.usage.prompt_tokens);
-      console.log('Completion tokens:', response.usage.completion_tokens);
-      console.log('Total tokens:', response.usage.total_tokens);
-      console.log('====================');
-    }
 
     // 응답 검증 및 base64 추출
     if (!response.data || !response.data[0]) {
