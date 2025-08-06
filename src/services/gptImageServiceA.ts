@@ -251,12 +251,7 @@ export async function generateBannerImageWithGPT(
 
     return {
       imageBase64,
-      success: true,
-      usage: response.usage ? {
-        prompt_tokens: response.usage.prompt_tokens,
-        completion_tokens: response.usage.completion_tokens,
-        total_tokens: response.usage.total_tokens
-      } : undefined
+      success: true
     };
 
   } catch (error) {
