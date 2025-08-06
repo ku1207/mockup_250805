@@ -71,7 +71,6 @@ export async function POST(request: NextRequest) {
         success: true,
         imageBase64: result.imageBase64,
         message: '이미지 B가 성공적으로 생성되었습니다.',
-        usage: result.usage
       });
     } else {
       console.error('이미지 B 생성 실패:', result.error);
